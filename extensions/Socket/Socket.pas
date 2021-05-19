@@ -5,7 +5,8 @@ interface
 uses SysUtils ,Classes, IdBaseComponent, IdComponent,
   IdTCPConnection, IdTCPClient, IdIOHandler, IdGlobal, IdUDPBase,
   IdUDPClient, IdHTTP, IdMultipartFormData, IdMessageClient, IdSMTPBase, IdSMTP,
-  IdMessage, IdEMailAddress, IdAttachment, IdAttachmentFile;
+  IdMessage, IdEMailAddress, IdAttachment, IdAttachmentFile,
+  IdFTP, IdFTPCommon ;
 
 type
 
@@ -104,6 +105,60 @@ type
      class procedure SendMail(const host, username, password, subject, from: string; port: integer; ato: array of string;
                           messages: TStringList; attachments: array of string);
   end;
+
+
+  TOnStatusEvent = procedure(ASender: TObject;
+   const AStatusText: string) of object;
+
+
+
+  TFTP = class(TObject)
+  private
+    FIdFtp: TIdFTP;
+    FOnFTPStatus: TOnStatusEvent;
+    function GetHost: string;
+    procedure SetHost(Value: string);
+    function GetPassword: string;
+    procedure SetPassword(Value: string);
+    function GetUsername: string;
+    procedure SetUsername(Value: string);
+    function GetListResult: TStrings;
+    function GetPort: integer;
+    procedure SetPort(Value: integer);
+    function GetPassive: boolean;
+    procedure SetPassive(Value: boolean);
+    procedure OnStatusEvent(ASender: TObject; const AStatus: TIdStatus;
+      const AStatusText: string);
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure Abort;
+    procedure ChangeDir(ADirname: string);
+    procedure ChangeDirUp;
+    procedure Connect;
+    procedure Delete(AFilename: string);
+    procedure Get(Afilename: string; ADest: TStream);
+    procedure List;
+    procedure Login;
+    procedure MakeDir(ADirname: string);
+    procedure Put(AsourceFile: string; ADestFile: string);
+    procedure PutStream(ASource: TStream; ADeestFile: string);
+    procedure RemoveDir(ADirname: string);
+    procedure Rename(AsourceFile: string; AdestFile: string);
+    procedure Status(AStatus: TStrings);
+    function Connected: boolean;
+    procedure Disconnect;
+    function Size(AFilename: string): integer;
+    property Host: string read GetHost write SetHost;
+    property Passive: boolean read GetPassive write SetPassive;
+    property Password: string read GetPassword write SetPassword;
+    property Username: string read GetUsername write SetUsername;
+    property Port: integer read GetPort write SetPort;
+    property ListResult: TStrings read GetListResult;
+    property OnStatus: TOnStatusEvent read FOnFTPStatus write FOnFTPStatus;
+  end;
+
+
 
 
 
@@ -435,6 +490,169 @@ begin
   finally
     Msg.Free;
   end;
+end;
+
+{ TFTP }
+
+procedure TFTP.Abort;
+begin
+  try FIdFtp.Abort; except end;
+end;
+
+procedure TFTP.ChangeDir(ADirname: string);
+begin
+  try FIdFtp.ChangeDir(ADirname);  except end;
+
+end;
+
+procedure TFTP.ChangeDirUp;
+begin
+  try FIdFtp.ChangeDirUp;  except end;
+end;
+
+procedure TFTP.Connect;
+begin
+  try FIdFtp.Connect; FIdFtp.AUTHCmd := tAuthTLS; except end;
+end;
+
+function TFTP.Connected: boolean;
+begin
+    Result := FIdFtp.Connected;
+end;
+
+procedure TFTP.OnStatusEvent(ASender: TObject; const AStatus: TIdStatus;
+   const AStatusText: string);
+begin
+  FOnFTPStatus(Self, AStatusText);
+end;
+
+constructor TFTP.Create;
+begin
+  inherited;
+  FIdFtp := TIdFTP.Create(nil);
+  FIdFtp.OnStatus := OnStatusEvent;
+
+end;
+
+procedure TFTP.Delete(AFilename: string);
+begin
+  try FIdFtp.Delete(AFilename);  except end;
+end;
+
+destructor TFTP.Destroy;
+begin
+  FIdFtp.Free;
+  inherited;
+end;
+
+procedure TFTP.Disconnect;
+begin
+  try FIdFtp.Disconnect;  except end;
+end;
+
+procedure TFTP.Get(Afilename: string; ADest: TStream);
+begin
+  try FIdFtp.Get(Afilename, ADest); except end;
+end;
+
+function TFTP.GetHost: string;
+begin
+  Result := FIdFtp.Host;
+end;
+
+function TFTP.GetListResult: TStrings;
+begin
+  Result := FIdFtp.ListResult;
+end;
+
+function TFTP.GetPassive: boolean;
+begin
+  Result := FIdFtp.Passive;
+end;
+
+function TFTP.GetPassword: string;
+begin
+  Result := FIdFtp.Password;
+end;
+
+function TFTP.GetPort: integer;
+begin
+  Result := FIdFtp.Port;
+end;
+
+function TFTP.GetUsername: string;
+begin
+  Result := FIdFtp.Username;
+end;
+
+procedure TFTP.List;
+begin
+  try FIdFtp.List; except end;
+end;
+
+procedure TFTP.Login;
+begin
+  try FIdFtp.Login; except end;
+end;
+
+procedure TFTP.MakeDir(ADirname: string);
+begin
+  try FIdFtp.MakeDir(ADirname); except end;
+end;
+
+procedure TFTP.Put(AsourceFile, ADestFile: string);
+begin
+  try FIdFtp.Put(AsourceFile, ADestFile); except end;
+end;
+
+procedure TFTP.PutStream(ASource: TStream; ADeestFile: string);
+begin
+    try FIdFtp.Put(ASource, ADeestFile, false, 0 ); except end;
+end;
+
+procedure TFTP.RemoveDir(ADirname: string);
+begin
+  try FIdFtp.RemoveDir(ADirname); except end;
+end;
+
+procedure TFTP.Rename(AsourceFile, AdestFile: string);
+begin
+  try FIdFtp.Rename(AsourceFile, AdestFile); except end;
+end;
+
+procedure TFTP.SetHost(Value: string);
+begin
+  FIdFtp.Host := Value;
+end;
+
+procedure TFTP.SetPassive(Value: boolean);
+begin
+  FIdFtp.Passive := true;
+end;
+
+procedure TFTP.SetPassword(Value: string);
+begin
+  FIdFtp.Password := Value;
+end;
+
+procedure TFTP.SetPort(Value: integer);
+begin
+  FIdFtp.Port := Value;
+end;
+
+procedure TFTP.SetUsername(Value: string);
+begin
+  FIdFtp.Username := Value;
+end;
+
+function TFTP.Size(AFilename: string): integer;
+begin
+  Result := FIdFtp.Size(AFilename);
+end;
+
+procedure TFTP.Status(AStatus: TStrings);
+begin
+  try FIdFtp.Status(AStatus); except end;
 end;
 
 end.
